@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rocket and Explosion Sounds</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #282c34;
+            color: white;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background-color: #61dafb;
+            color: #282c34;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #21a1f1;
+        }
+    </style>
+</head>
+<body>
+
+    <button id="rocketBtn">Trigger Rocket</button>
+    <button id="explosionBtn">Trigger Explosion</button>
+
+    <script>
+        // Initialize sound object
+        const sound = Sound();
+
+        document.getElementById('rocketBtn').addEventListener('click', () => {
+            sound.rocket();
+        });
+
+        document.getElementById('explosionBtn').addEventListener('click', () => {
+            sound.explosion();
+        });
+
+        function Sound(){
+            let auc=new AudioContext();
+            let aubrocket=noise(0.2);
+            let aubexplosion=noise(1);
+
+            function noise(seconds){
+                let b=auc.createBuffer(1,auc.sampleRate*seconds,auc.sampleRate);
+                b.getChannelData(0).forEach((_,i,a)=>a[i]=Math.random()*2-1);
+                return b;
+            }
+
+            function rocket(){
+                let s=auc.createBufferSource();
+                s.buffer=aubrocket;
+                let gain=auc.createGain();
+                gain.gain.value=0.3;
+                s.connect(gain);
+                gain.connect(auc.destination);
+                s.start(0,0,s.buffer.duration);
+                s.onended=function(){
+                    s.disconnect();
+                    gain.disconnect();
+                };
+            }
+
+            function explosion(){
+                let s=auc.createBufferSource();
+                s.buffer=aubexplosion;
+                let gain=auc.createGain();gain.gain.value=3;
+                let filter=auc.createBiquadFilter();filter.type="lowpass";filter.frequency.value=300;
+                gain.gain.linearRampToValueAtTime(0,auc.currentTime+1);
+                s.connect(filter);
+                filter.connect(gain);
+                gain.connect(auc.destination);
+                s.start(0,0,s.buffer.duration);
+                s.onended=function(){
+                    s.disconnect();
+                    gain.disconnect();
+                    filter.disconnect();
+                };
+            }
+
+            return {rocket,explosion};
+        }
+    </script>
+
+</body>
+</html>
